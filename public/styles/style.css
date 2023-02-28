@@ -1,0 +1,16 @@
+li {
+    list-style: none;
+}
+
+ul {
+    padding: 0;
+}
+
+.createForm {
+    margin-top: 15px;
+}
+
+#createInput {
+    padding: 10px;
+    width: 100%;
+}
