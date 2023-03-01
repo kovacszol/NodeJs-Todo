@@ -1,6 +1,6 @@
 const express = require("express");
-const updatedText = require("./public/scripts/script.js")
 const mongoose = require("mongoose");
+const sanitizeHtml = require('sanitize-html');
 const engine = require("ejs-mate");
 const todo = require("./models/todo");
 const app = express();
@@ -21,7 +21,9 @@ mongoose.connect('mongodb://127.0.0.1:27017/todo',
     {
         useNewUrlParser: true,
         useUnifiedTopology: true,
-    });
+    })
+    .then(() => console.log("Connected to database"))
+    .catch(err => console.log(`Connection error: ${err}`));
 
 //READ,SHOW
 app.get('/', async (req, res) => {
@@ -30,24 +32,46 @@ app.get('/', async (req, res) => {
 })
 //CREATE
 app.post('/create', async (req, res) => {
-    const { createInput } = req.body;
-    const newTodo = new todo({ todoItem: createInput })
-    await newTodo.save();
-    res.redirect('/');
+    let { createInput } = req.body;
+    createInput = sanitizeHtml(createInput, {
+        allowedTags: [],
+        allowedAttributes: {},
+    });
+    if (createInput.trim().length < 3) {
+        return res.status(400).json({ error: "Input must have at least 3 characters, and can not contain tags" });
+    }
+    try {
+        const newTodo = new todo({ todoItem: createInput });
+        await newTodo.save();
+        res.redirect('/');
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Failed to create new todo item' });
+    }
+});
 
-})
 //UPDATE
 app.patch('/update/:id', async (req, res) => {
     const id = req.params.id;
     const updatedText = req.body.editInput;
-    await todo.findByIdAndUpdate(id, { todoItem: updatedText });
-    res.redirect("/");
+    try {
+        const updatedTodo = await todo.findByIdAndUpdate(id, { todoItem: updatedText }, { new: true });
+        if (!updatedTodo) throw new Error(`Todo with ID ${id} not found`);
+        res.redirect("/");
+    } catch (err) {
+        res.status(400).send(`Error updating todo: ${err.message}`);
+    }
 });
-//UPDATE
+//DELETE
 app.delete('/delete/:id', async (req, res) => {
     const id = req.params.id;
-    await todo.findByIdAndDelete(id);
-    res.redirect("/");
+    try {
+        const deletedTodo = await todo.findByIdAndDelete(id);
+        if (!deletedTodo) throw new Error(`Todo with ID ${id} not found`);
+        res.redirect("/");
+    } catch (err) {
+        res.status(400).send(`Error deleting todo: ${err.message}`);
+    }
 });
 
 app.listen(3000, () => console.log("Server is running"));

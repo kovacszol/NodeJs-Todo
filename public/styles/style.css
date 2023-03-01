@@ -12,5 +12,20 @@ ul {
 
 #createInput {
     padding: 10px;
-    width: 100%;
+    width: 96vw;
+}
+
+h1 {
+    text-align: center;
+}
+
+
+.valid-feedback,
+.invalid-feedback {
+    text-align: center;
+}
+
+#createBtn {
+    width: 15vw;
+    border-radius: 10px;
 }
